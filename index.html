@@ -120,7 +120,7 @@ dim(training)</code></pre>
 </div>
 <div id="data-cleaning-and-processing" class="section level2">
 <h2>Data Cleaning and Processing</h2>
-<p>We have a lot of variables (160) within the data, and this will result in a highly complex model. The aim in this step is to remove variables that are likely to be poor predictors. A look at the data indicates that some of the variables have little or no variability and therefore will probably not be a useful covarariate (reference Week 2 lecture - Covariate creation). We can use the nearZeroVar() fucntion within the caret package to identify those variables, and then remove those variables using the R code shown below. The code below also removs the first fw variables which are not measures of movement, and thus we do not want to include in the algorithm.</p>
+<p>We have a lot of variables (160) within the data, and this will result in a highly complex model. The aim in this step is to remove variables that are likely to be poor predictors. A look at the data indicates that some of the variables have little or no variability and therefore will probably not be a useful covarariate (reference Week 2 lecture - Covariate creation). We can use the nearZeroVar() fucntion within the caret package to identify those variables, and then remove those variables using the R code shown below. The code below also removs the first few variables which are not measures of movement, and thus we do not want to include in the algorithm.</p>
 <pre class="r"><code>nsv &lt;- nearZeroVar(training, saveMetrics=TRUE)
 nsv_rem &lt;- nsv[nsv$nzv==TRUE | nsv$zeroVar==TRUE, ]
 nrow(nsv_rem)</code></pre>
@@ -176,9 +176,9 @@ modFit &lt;- train(classe~., data=training, method=&quot;rf&quot;, proxy=TRUE, t
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  Accuracy   Kappa      Accuracy SD   Kappa SD    
-##    2    0.9917787  0.9895998  0.0008418846  0.0010654480
-##   27    0.9907596  0.9883113  0.0002218788  0.0002811519
-##   52    0.9816556  0.9767923  0.0050893281  0.0064413100
+##    2    0.9914391  0.9891702  0.0012249171  0.0015502627
+##   27    0.9905558  0.9880536  0.0006782306  0.0008587718
+##   52    0.9817235  0.9768768  0.0047070810  0.0059582414
 ## 
 ## Accuracy was used to select the optimal model using  the largest value.
 ## The final value used for the model was mtry = 2.</code></pre>

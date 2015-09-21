@@ -56,7 +56,7 @@ dim(training)
 
 ## Data Cleaning and Processing
 
-We have a lot of variables (160) within the data, and this will result in a highly complex model. The aim in this step is to remove variables that are likely to be poor predictors. A look at the data indicates that some of the variables have little or no variability and therefore will probably not be a useful covarariate (reference Week 2 lecture - Covariate creation). We can use the nearZeroVar() fucntion within the caret package to identify those variables, and then remove those variables using the R code shown below. The code below also removs the first fw variables which are not measures of movement, and thus we do not want to include in the algorithm.
+We have a lot of variables (160) within the data, and this will result in a highly complex model. The aim in this step is to remove variables that are likely to be poor predictors. A look at the data indicates that some of the variables have little or no variability and therefore will probably not be a useful covarariate (reference Week 2 lecture - Covariate creation). We can use the nearZeroVar() fucntion within the caret package to identify those variables, and then remove those variables using the R code shown below. The code below also removs the first few variables which are not measures of movement, and thus we do not want to include in the algorithm.
 
 ```{r}
 nsv <- nearZeroVar(training, saveMetrics=TRUE)
