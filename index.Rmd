@@ -1,0 +1,129 @@
+---
+title: "Practical_Machine_Learning"
+author: "Michael Jackson"
+date: "Monday, September 21, 2015"
+output: html_document
+---
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+## Project Goal
+
+The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You project instructions allow the use any of the other variables to predict with. This report describes how the model was built, how cross validation was used, what the expected out of sample error is, and why I made the choices you did. Finally the prediction model is used to predict 20 different test cases. 
+
+## Data 
+
+The training data for this project are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. 
+
+## Loading The Data and Required packages
+
+The data should be downloaded from the source urls shown above and placed in your working directory. I cannot use R code to check for the presence of the data and automatically download the data from the source url if it is not present due to firewall restrictions. 
+
+```{r}
+set.seed(3533)
+library(caret)
+library(dplyr)
+maintrain <- read.csv("pml-training.csv")
+finaltest <- read.csv("pml-testing.csv")
+```
+
+## Explore the Data
+
+```{r}
+dim(maintrain)
+```
+
+## Data Splitting
+
+We now split the main data into two parts, one for training the model, and one for testing the model. The training data should generally be about three times the size of the testing data where posible, which is the ratio I have chosen to use here. The R code has been adapted from that shown in the Data Slicing lecture slides from Week 2.
+
+```{r}
+inTrain <- createDataPartition(y = maintrain$classe, p=0.75, list = FALSE)
+training <- maintrain[inTrain,]
+testing <- maintrain[-inTrain,]
+dim(training)
+```
+
+## Data Cleaning and Processing
+
+We have a lot of variables (160) within the data, and this will result in a highly complex model. The aim in this step is to remove variables that are likely to be poor predictors. A look at the data indicates that some of the variables have little or no variability and therefore will probably not be a useful covarariate (reference Week 2 lecture - Covariate creation). We can use the nearZeroVar() fucntion within the caret package to identify those variables, and then remove those variables using the R code shown below. The code below also removs the first fw variables which are not measures of movement, and thus we do not want to include in the algorithm.
+
+```{r}
+nsv <- nearZeroVar(training, saveMetrics=TRUE)
+nsv_rem <- nsv[nsv$nzv==TRUE | nsv$zeroVar==TRUE, ]
+nrow(nsv_rem)
+nsv_rem_lab <- row.names(nsv_rem)
+training <- select(training, -one_of(nsv_rem_lab))
+training <- select(training, roll_belt:classe)
+dim(training)
+```
+
+This processing gets us down to 97 potential covariates. Examination of the remaining data indicates that many of these variables are missing from the majority of observations. There are a number of methods for dealing with missing values, but there are missing values for a particular variabe in almost all observations, it seems reasonable to simply remove those variables from the algorithm, as they are unikely to be good predictors. If we set a threshold to remove all variables where >90% of observations have a missing value, we end up with a final set of 53 covariates
+
+```{r}
+na_var <- sapply(training, function(x) {mean(is.na(x))}) >0.9
+table(na_var)
+mainlyNA = names(na_var[na_var==TRUE])
+training = select(training, -one_of(mainlyNA))
+dim(training)
+
+```
+
+If we set a threshold to remove all variables where >90% of observations have a missing value, we end up with a final set of 53 covariates which we will use for our model.
+
+## Model Building / Training - Random Forest
+
+Based on the course lectures, it would appear that the Random Forest method may be an appropriate method for this type of classification problem (week 3 - Random Forests lecture), and therefore that is the model I will start by trying, using k-fold cross-validation with 4 folds (week 1 - Cross validation lecture)
+
+```{r}
+# First model
+library(parallel)
+library(doParallel)
+core <- makeCluster(detectCores() - 1)
+registerDoParallel(core)
+ctrl <- trainControl(method="cv", number = 4)
+modFit <- train(classe~., data=training, method="rf", proxy=TRUE, trControl = ctrl, allowParallel = TRUE)
+modFit
+stopCluster(core)
+```
+
+## Model Evaluation - Prediction Using The Testing Data
+
+Having trained the model using the random forest method on the tarining data, we can take a look at the accuracy of the model, using a confusion matrix.
+
+```{r}
+predict_train <- predict(modFit, training)
+conf_train<-confusionMatrix(predict_train, training$classe)
+conf_train
+```
+
+The confusion matrix shows the accuracy of the model to be 100% when using the training data, and thus an in sample error is 0%. However, the real test will be when using the model on the test data, after which we can measure the "out-of-sample" error. 
+
+```{r}
+prediction <- predict(modFit, testing)
+conf_test<-confusionMatrix(prediction, testing$classe)
+conf_test
+error <- paste("out of sample error = ", round(100-(mean(predict(modFit, testing) == testing$classe))*100, 4), "%", sep="")
+error
+```
+
+The out of sample error is 0.6933%, which indicates a satisfactorily accurate model. 
+
+## Prediction For Coursera Assessment Data
+
+Having determined that the model accuracy is high and the "out-of-sample" error low on the test data, I can now use the model to predict the classe variable for each of the 20 observations in the assignment test data.
+
+```{r}
+predicted <- predict(modFit, newdata=finaltest)
+predicted
+```
