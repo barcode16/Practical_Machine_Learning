@@ -1,5 +1,5 @@
 ---
-title: "Practical_Machine_Learning"
+title: "Practical Machine Learning - Coursera Course Project Writeup"
 author: "Michael Jackson"
 date: "Monday, September 21, 2015"
 output: html_document
